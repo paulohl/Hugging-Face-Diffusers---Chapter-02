@@ -1,0 +1,147 @@
+<h1 data-label="chapter-2-wrap-up-examples" class="ltx_title_section">Chapter 2 wrap up examples</h1><div>This chapter focuses on the utilization of Hugging Face Diffusion for
+text classification and generation. With a deep dive into autoregressive
+models like GPT, we can provide a comprehensive example using the
+Hugging Face transformers library. The example will cover text
+classification and generating text with a fine-tuned GPT model.</div><h2 data-label="fine-tuning-distilbert-for-sentiment-analysis" class="ltx_title_subsection">1. Fine-Tuning DistilBERT for Sentiment
+Analysis</h2><div>In this example, we will demonstrate how to fine-tune a pre-trained
+DistilBERT model for sentiment analysis, which is a common text
+classification task. We will use a subset of the IMDb dataset and the
+Hugging Face Transformers library to achieve this. The fine-tuned model
+will classify text data as either positive or negative sentiment:
+‘ ’python
+from transformers import DistilBertTokenizer,
+DistilBertForSequenceClassification, Trainer, TrainingArguments
+import numpy as np
+from datasets import load_dataset
+# Load dataset
+dataset = load_dataset(”imdb”, split=’train[:5000]’)
+# Preprocess data
+tokenizer =
+DistilBertTokenizer.from_pretrained(’distilbert-base-uncased’)
+def tokenize(batch):
+return tokenizer(batch[’text’], padding=True, truncation=True,
+max_length=512)
+dataset = dataset.map(tokenize, batched=True, batch_size=len(dataset))
+dataset.set_format(’torch’, columns=[’input_ids’, ’attention_mask’,
+’label’])
+# Load DistilBERT for sequence classification
+model =
+DistilBertForSequenceClassification.from_pretrained(’distilbert-base-uncased’,
+num_labels=2)
+# Define training arguments
+training_args = TrainingArguments(
+output_dir=’./results’,
+num_train_epochs=3,
+per_device_train_batch_size=16,
+warmup_steps=500,
+weight_decay=0.01,
+logging_dir=’./logs’,
+load_best_model_at_end=True)
+# Initialize Trainer
+trainer = Trainer(
+model=model,
+args=training_args,
+train_dataset=dataset)
+# Train the model
+trainer.train()
+# Save the model
+model_path = ”./distilbert-finetuned-imdb”
+model.save_pretrained(model_path)
+tokenizer.save_pretrained(model_path)
+“
+Let us break down the steps of the code:
+We begin by importing the necessary libraries from Hugging Face’s
+Transformers library, which includes the DistilBertTokenizer and
+DistilBertForSequenceClassification for tokenization and model loading,
+respectively. Additionally, the Trainer and TrainingArguments classes
+are imported to manage the training process with minimal boilerplate
+code.
+The dataset is loaded using the datasets library, specifically a subset
+of 5,000 samples from the IMDb dataset, which is a popular dataset for
+sentiment classification tasks. The tokenizer is initialized to convert
+text into tokenized sequences that the model can understand. We apply
+padding and truncation to ensure all input sequences are of uniform
+length, then map the tokenization function across the entire dataset.
+The data is further formatted into PyTorch tensors, preparing it for use
+in the DistilBERT model.
+We loaded a pre-trained DistilBERT model with a classification head that
+is configured for binary sentiment classification (positive/negative).
+The TrainingArguments define parameters for the training process, such
+as the number of epochs, batch size, and early stopping mechanisms,
+which help ensure the model is trained efficiently without overfitting.
+Using the Trainer class from Hugging Face simplifies the training loop,
+managing everything from model updates to validation. Once the training
+is complete, both the model and tokenizer are saved to a directory,
+making them ready for future use in downstream applications.
+This example illustrates how DistilBERT can be fine-tuned with increased
+efficiency for sentiment analysis tasks, leveraging the Hugging Face
+library’s easy-to-use API and pre-trained models.</div><h2 data-label="fine-tuning-gpt-2-for-creative-writing-generation" class="ltx_title_subsection">2. Fine-Tuning GPT-2 for Creative Writing
+Generation</h2><div>In this example, we fine-tune a pre-trained GPT-2 model to generate
+creative writing samples. GPT-2, developed by OpenAI, is a
+state-of-the-art autoregressive language model capable of generating
+coherent and contextually relevant text. We will use a text dataset that
+contains creative writing samples and fine-tune the GPT-2 model to adapt
+it to this specific task.
+.
+“python
+from transformers import GPT2LMHeadModel, GPT2Tokenizer, TextDataset,
+DataCollatorForLanguageModeling, Trainer, TrainingArguments
+# Load tokenizer and model
+tokenizer = GPT2Tokenizer.from_pretrained(’gpt2’)
+model = GPT2LMHeadModel.from_pretrained(’gpt2’)
+# Prepare dataset
+train_path = ’path_to_training_data.txt’
+train_dataset = TextDataset(
+tokenizer=tokenizer,
+file_path=train_path,
+block_size=128)
+data_collator = DataCollatorForLanguageModeling(
+tokenizer=tokenizer, mlm=False)
+# Define training arguments
+training_args = TrainingArguments(
+output_dir=’./gpt2-finetuned’,
+overwrite_output_dir=True,
+num_train_epochs=3,
+per_device_train_batch_size=4,
+save_steps=10_000,
+save_total_limit=2)
+# Initialize Trainer
+trainer = Trainer(
+model=model,
+args=training_args,
+data_collator=data_collator,
+train_dataset=train_dataset)
+# Train the model
+trainer.train()
+# Save the model
+model.save_pretrained(’./gpt2-finetuned’)
+tokenizer.save_pretrained(’./gpt2-finetuned’)
+“
+Let us break down the steps in the code:
+We start by loading the pre-trained GPT-2 model and its tokenizer from
+Hugging Face’s Transformers library. The GPT-2 tokenizer prepares text
+by converting it into tokens that the model can process, while the GPT-2
+language model (GPT2LMHeadModel) is used for generating creative text.
+Next, the dataset containing creative writing samples is prepared from a
+text file, which is tokenized using the GPT-2 tokenizer. We specify the
+block size to segment the text into manageable portions for training.
+The DataCollatorForLanguageModeling is used to manage dynamic masking
+during the language modeling process, ensuring that the model learns to
+predict the next token in the sequence accurately.
+The training arguments define key parameters for training, such as the
+number of epochs, batch size, and the frequency of model saving. We
+initialize the Trainer class, which manages the training loop and
+evaluation, making the fine-tuning process more efficient.
+After training is complete, we save both the fine-tuned GPT-2 model and
+tokenizer to a specified directory, allowing them to be reused for
+future text generation tasks.
+This example demonstrates how to adapt GPT-2 for specific creative
+writing tasks by fine-tuning it on a custom dataset. Fine-tuning
+provides the flexibility to tailor the model’s text generation
+capabilities to produce contextually rich and imaginative content.
+In summary, this chapter equipped readers with a robust understanding of
+how to leverage the Hugging Face Diffusion library for various text
+classification and generation tasks. By combining theoretical insights
+with practical examples, we provided a comprehensive guide for academics
+and scientists aiming to apply these techniques in their research and
+projects.</div>
